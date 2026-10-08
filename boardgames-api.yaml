@@ -1,0 +1,117 @@
+openapi: 3.1.0
+info:
+  title: Boardgames API
+  version: "1.0"
+  description: >
+    ITI8801 assignment 5, the API for student code 262957IAIM. Implement exactly
+    this: the paths, methods, status codes, field names and types. The
+    validator checks your service against this document.
+servers:
+  - url: http://localhost
+    description: your service, on the port it listens on
+security: []
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: The service is up and can reach its database
+      responses:
+        "200":
+          description: Up, and the database answers
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Health" }
+        "503":
+          description: Up, but the database does not answer
+  /api/boardgames:
+    get:
+      operationId: listBoardgames
+      summary: All boardgames, or those with exactly this name
+      parameters:
+        - name: name
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: The boardgames, in the order they were created
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Boardgame" }
+    post:
+      operationId: createBoardgame
+      summary: Create a boardgame
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NewBoardgame" }
+      responses:
+        "201":
+          description: The created boardgame, with the id the service assigned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Boardgame" }
+        "400":
+          description: The body is not a valid NewBoardgame
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+  /api/boardgames/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      operationId: getBoardgame
+      summary: One boardgame
+      responses:
+        "200":
+          description: The boardgame
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Boardgame" }
+        "404":
+          description: No boardgame with this id, or the id is not a positive integer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    delete:
+      operationId: deleteBoardgame
+      summary: Delete a boardgame
+      responses:
+        "204":
+          description: Deleted; no body
+        "404":
+          description: No boardgame with this id
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+components:
+  schemas:
+    NewBoardgame:
+      type: object
+      required: [name, players]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100, pattern: "^[^\\u0000]*$", description: "no zero bytes: PostgreSQL cannot store them" }
+        players: { type: integer, minimum: 0, maximum: 1000000, description: "maximum number of players" }
+    Boardgame:
+      type: object
+      required: [id, name, players]
+      properties:
+        id: { type: integer, minimum: 1 }
+        name: { type: string }
+        players: { type: integer, minimum: 0 }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    Health:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, const: ok }

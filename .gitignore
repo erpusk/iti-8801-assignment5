@@ -1,0 +1,9 @@
+.env
+terraform.tfvars
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfvars
+.vscode/
+bin/
+obj/
