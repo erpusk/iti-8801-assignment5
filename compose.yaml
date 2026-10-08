@@ -25,9 +25,7 @@ services:
       retries: 10
 
   api:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/erpusk/boardgames-api:latest
     environment:
       ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=boardgames;Username=boardgames;Password=${DB_PASSWORD}"
     networks: [frontend, backend]
