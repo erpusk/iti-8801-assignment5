@@ -1,6 +1,7 @@
 using BoardgamesApi.Data;
 using BoardgamesApi.Models;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,9 +45,28 @@ app.MapGet("/api/boardgames", async (string? name, BoardgameDbContext db) =>
     return Results.Ok(boardgames);
 });
 
-app.MapPost("/api/boardgames", async (NewBoardgame input, BoardgameDbContext db) =>
+app.MapPost("/api/boardgames", async (JsonElement input, BoardgameDbContext db) =>
 {
-    if (input == null || input.Name == null || input.Name.Length < 1 || input.Name.Length > 100 || input.Name.Contains('\0') || input.Players == null || input.Players < 0 || input.Players > 1000000)
+    if (input.ValueKind != JsonValueKind.Object ||
+        !input.TryGetProperty("name", out var nameElement) ||
+        nameElement.ValueKind != JsonValueKind.String ||
+        !input.TryGetProperty("players", out var playersElement) ||
+        playersElement.ValueKind != JsonValueKind.Number ||
+        !playersElement.TryGetInt32(out var players))
+    {
+        return Results.BadRequest(new ErrorResponse
+        {
+            Error = "Invalid boardgame"
+        });
+    }
+
+    var name = nameElement.GetString();
+
+    if (string.IsNullOrEmpty(name) ||
+        name.Length > 100 ||
+        name.Contains('\0') ||
+        players < 0 ||
+        players > 1000000)
     {
         return Results.BadRequest(new ErrorResponse
         {
@@ -56,8 +76,8 @@ app.MapPost("/api/boardgames", async (NewBoardgame input, BoardgameDbContext db)
 
     var boardgame = new Boardgame
     {
-        Name = input.Name,
-        Players = input.Players.Value
+        Name = name,
+        Players = players
     };
 
     db.Boardgames.Add(boardgame);
